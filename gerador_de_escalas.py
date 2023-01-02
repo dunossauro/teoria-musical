@@ -4,10 +4,11 @@ from rich.console import Console
 from rich.table import Table
 from typer import Argument, run
 
+console = Console()
 NOTES = 'C C# D D# E F F# G G# A A# B'.split()
 
 
-class _Scale:
+class Scale:
     def __init__(self, scale):
         self.scale = scale
 
@@ -15,7 +16,7 @@ class _Scale:
         return self.scale[pos]
 
 
-class _Notes:
+class Notes:
     def __init__(self, scale, tonic):
         self.scale = scale
         self.tonic = tonic
@@ -31,11 +32,17 @@ class _Notes:
         return tuple(d)
 
 
-scales = {'major': _Scale((0, 2, 4, 5, 7, 9, 11, 0))}
+scales = {
+    'major': Scale((0, 2, 4, 5, 7, 9, 11, 0)),
+    'minor': Scale((0, 2, 3, 5, 7, 8, 10, 0)),
+}
 
 
-def main(_tonic: str = Argument('all')):
-    table = Table(title=f'Escala maior de {_tonic}', show_lines=True)
+def create_table(scale, tonic):
+    if tonic != 'all':
+        table = Table(title=f'Escala {scale} de {tonic}', show_lines=True)
+    else:
+        table = Table(title=f'Escala {scale}', show_lines=True)
 
     table.add_column('Iº Tônica', justify='center')
     table.add_column('IIº - T', justify='center')
@@ -46,15 +53,24 @@ def main(_tonic: str = Argument('all')):
     table.add_column('VIIº - T', justify='center')
     table.add_column('Iº - T', justify='center')
 
-    if _tonic == 'all':
-        for tonic in NOTES:
-            table.add_row(
-                *_Notes(_Scale((0, 2, 4, 5, 7, 9, 11, 0)), tonic).notes
-            )
-    else:
-        table.add_row(*_Notes(_Scale((0, 2, 4, 5, 7, 9, 11, 0)), _tonic).notes)
+    return table
 
-    console = Console()
+
+def main(scale: str = Argument('major'), tonic: str = Argument('all')):
+    table = create_table(scale, tonic)
+
+    match scale, tonic:
+        case 'major', 'all':
+            _scale: Scale = scales['major']
+            for _tonic in NOTES:
+                table.add_row(*Notes(_scale, _tonic).notes)
+        case 'minor', 'all':
+            _scale: Scale = scales['minor']
+            for _tonic in NOTES:
+                table.add_row(*Notes(_scale, _tonic).notes)
+        case _, _:
+            table.add_row(*Notes(scales[scale], tonic).notes)
+
     console.print(table)
 
 
